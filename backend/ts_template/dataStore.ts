@@ -6,7 +6,7 @@ export interface CookbookEntry {
   type: "recipe" | "ingredient";
 }
 
-export default interface RequiredItem {
+export interface RequiredItem {
   name: string;
   quantity: number;
 }

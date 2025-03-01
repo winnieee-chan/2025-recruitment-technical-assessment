@@ -4,7 +4,7 @@ import {
   setData,
   Recipe,
   Ingredient,
-  // RequiredItem,
+  RequiredItem,
 } from "./dataStore";
 
 // =============================================================================
@@ -100,8 +100,90 @@ app.post("/entry", (req: Request, res: Response) => {
 // [TASK 3] ====================================================================
 // Endpoint that returns a summary of a recipe that corresponds to a query name
 app.get("/summary", (req: Request, res: Request) => {
-  // TODO: implement me
-  res.status(500).send("not yet implemented!");
+  const { name } = req.query;
+  const cookbook = getData().cookbookEntries;
+
+  // A recipe with the corresponding name cannot be found.
+  const recipe = cookbook.find((entry) => entry.name === name);
+  if (!recipe) {
+    return res.status(400).send(`${name} not found`);
+  }
+
+  // The searched name is NOT a recipe name (ie. an ingredient).
+  if (recipe.type !== "recipe") {
+    return res.status(400).send(`${name} is NOT a recipe name`);
+  }
+
+  const getIngredients = (
+    item: RequiredItem
+  ): { name: string; quantity: number; cookTime: number }[] => {
+    const ingredient = cookbook.find((entry) => entry.name === item.name);
+
+    // The recipe contains recipes or ingredients that aren't in the cookbook.
+    if (!ingredient) {
+      throw new Error(`Ingredient ${item.name} not found in cookbook`);
+    }
+
+    if (ingredient.type === "ingredient") {
+      return [
+        {
+          name: ingredient.name,
+          quantity: item.quantity,
+          cookTime: (ingredient as Ingredient).cookTime,
+        },
+      ];
+    } else {
+      let allIngredients: {
+        name: string;
+        quantity: number;
+        cookTime: number;
+      }[] = [];
+      if ((ingredient as Recipe).requiredItems) {
+        for (const requiredItem of (ingredient as Recipe).requiredItems) {
+          allIngredients = allIngredients.concat(getIngredients(requiredItem));
+        }
+        return allIngredients;
+      }
+    }
+  };
+
+  try {
+    let totalCookTime = 0;
+    let ingredientSummary: {
+      [key: string]: { quantity: number; cookTime: number };
+    } = {};
+
+    for (const requiredItem of (recipe as Recipe).requiredItems) {
+      const ingredients = getIngredients(requiredItem);
+      ingredients.forEach((ingredient) => {
+        if (!ingredientSummary[ingredient.name]) {
+          ingredientSummary[ingredient.name] = { quantity: 0, cookTime: 0 };
+          ingredientSummary[ingredient.name].cookTime = ingredient.cookTime;
+        }
+        ingredientSummary[ingredient.name].quantity += ingredient.quantity;
+      });
+    }
+
+    //  total cook time
+    for (const ingredient in ingredientSummary) {
+      totalCookTime +=
+        ingredientSummary[ingredient].cookTime *
+        ingredientSummary[ingredient].quantity;
+    }
+
+    const ingredients = Object.keys(ingredientSummary).map((name) => ({
+      name,
+      quantity: ingredientSummary[name].quantity,
+    }));
+
+    return res.json({
+      name: recipe.name,
+      cookTime: totalCookTime,
+      ingredients,
+    });
+  } catch (error) {
+    return res.status(400).send(error.message);
+  }
 });
 
 // =============================================================================
