@@ -1,0 +1,29 @@
+{
+  "cookbookEntries": [
+    {
+      "type": "ingredient",
+      "name": "Egg",
+      "cookTime": 6
+    },
+    {
+      "type": "ingredient",
+      "name": "Lettuce",
+      "cookTime": 1
+    },
+    {
+      "type": "recipe",
+      "name": "Meatball",
+      "requiredItems": [
+        {
+          "name": "Beef",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "type": "ingredient",
+      "name": "Beef",
+      "cookTime": 10
+    }
+  ]
+}
